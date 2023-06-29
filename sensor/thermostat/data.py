@@ -57,4 +57,5 @@ class Data:
             file = open(self.datafile, "w")
             file.write(json.dumps(self.dataqueue, cls=Data.DequeEncoder))
             file.close()
+            
             log.debug("Saved data to File")

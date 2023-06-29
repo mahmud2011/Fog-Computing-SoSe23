@@ -8,6 +8,10 @@ from .data import Data
 
 from .temperaturesim import TemperatureSimulator
 
+from .endpoints.configuration import ConfigurationEndpoint
+from .endpoints.data import DataEndpoint
+from .endpoints.alive import AliveEndpoint
+
 log = logging.getLogger(__name__)
 
 
@@ -31,14 +35,26 @@ class SimulatorMiddleware:
 def create_app(config=None):
 
     config = config or Config()
-    data = Data(config)
+    #data = Data(config)
 
-    tempsim = TemperatureSimulator(config, data)
+    tempsim = TemperatureSimulator(config)
 
 
 
     app = falcon.asgi.App(
         middleware = [SimulatorMiddleware(config, [tempsim])]
     )
+
+    config_endpoint = ConfigurationEndpoint(config=config)
+    data_endpoint = DataEndpoint(config, tempsim)
+    alive_endpoint = AliveEndpoint()
+
+    app.add_route('/configuration', config_endpoint)
+    app.add_route("/configuration/valve", config_endpoint, suffix="valve")
+    # curl -X POST 127.0.0.1:8000/configuration/valve -H 'Content-Type: application/json' -d '{"valve":50}'
+
+    app.add_route("/data", data_endpoint)
+
+    app.add_route("/alive", alive_endpoint)
 
     return app

@@ -1,6 +1,6 @@
 import os
 import pathlib
-
+import threading
 import logging
 
 log = logging.getLogger(__name__)
@@ -13,7 +13,13 @@ class Config:
 
     DEFAULT_BUFFER_LENGTH = 20
 
+    DEFAULT_TEMPCHANGE_INTERVAL = 1
+
     DEFAULT_LOGGING_LEVEL = "DEBUG"
+
+
+
+    DEFAULT_VALVE_VALUE = 50
 
 
     def __setup_logging__(logging_level:str):
@@ -30,6 +36,8 @@ class Config:
         logging.basicConfig(level=level, format=Config.DEFAULT_LOGGING_FORMAT)
 
     def __init__(self) -> None:
+        self.configlock = threading.Lock()
+
         self.logging_level = os.environ.get("THERMOSTAT_LOGGING_LEVEL", self.DEFAULT_LOGGING_LEVEL)
         Config.__setup_logging__(self.logging_level)
 
@@ -44,5 +52,31 @@ class Config:
 
         log.info(f"buffer length: {self.buffer_maxlen}")
 
+        self.temperature_change_interval = os.environ.get("THERMOSTAT_TEMPERATURE_CHANGE_INTERVAL", self.DEFAULT_TEMPCHANGE_INTERVAL)
+
+        log.info(f"sensing interval: {self.temperature_change_interval}")
+
+        self.valve_open_value = os.environ.get("THERMOSTAT_VALVE_DEFAULT_VALUE", self.DEFAULT_VALVE_VALUE)
+
+
+        self.datafile = os.path.join(self.data_path, 'config.settings')
+
+        #PERSIST SETTINGS
+
         
 
+    @property
+    def valve_open_value(self):
+        with self.configlock:
+            return self._valve_open_value
+    
+    @valve_open_value.setter
+    def valve_open_value(self, value:int):
+        with self.configlock:
+            if value > 100:
+                log.error("Tried to open valve more than allowed")
+                raise ValueError("Valve cant be opened above 100%")
+            if value < 0:
+                log.error("Tried to close valve more than allowed")
+                raise ValueError("Valve cant be closed less than 0%")
+            self._valve_open_value = value
