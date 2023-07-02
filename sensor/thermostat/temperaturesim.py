@@ -3,7 +3,6 @@ import logging
 import threading
 from time import sleep
 from .config import Config
-from .data import Data
 from .simulators import Simulator
 
 log = logging.getLogger(__name__)
@@ -16,6 +15,8 @@ class TemperatureSimulator(Simulator):
 
     def __init__(self, config:Config) -> None:
         super().__init__(config=config)
+
+        self.thread_name = TemperatureSimulator.WORKER_THREAD_NAME
 
         self.templock = threading.Lock()
         self.temperature = 23.0

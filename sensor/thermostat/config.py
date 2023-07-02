@@ -17,9 +17,13 @@ class Config:
 
     DEFAULT_LOGGING_LEVEL = "DEBUG"
 
+    DEFAULT_EDGE_TIMEOUT = 60
 
+    DEFAULT_SERVER_PORT = 8000
 
     DEFAULT_VALVE_VALUE = 50
+
+    DEFAULT_MULTICAST_PORT = 5924
 
 
     def __setup_logging__(logging_level:str):
@@ -37,6 +41,10 @@ class Config:
 
     def __init__(self) -> None:
         self.configlock = threading.Lock()
+
+        self.server_port = os.environ.get("THERMOSTAT_SERVER_PORT", self.DEFAULT_SERVER_PORT)
+
+        self.multicast_port = os.environ.get("THERMOSTAT_MULTICAST_PORT", self.DEFAULT_MULTICAST_PORT)
 
         self.logging_level = os.environ.get("THERMOSTAT_LOGGING_LEVEL", self.DEFAULT_LOGGING_LEVEL)
         Config.__setup_logging__(self.logging_level)
@@ -57,6 +65,8 @@ class Config:
         log.info(f"sensing interval: {self.temperature_change_interval}")
 
         self.valve_open_value = os.environ.get("THERMOSTAT_VALVE_DEFAULT_VALUE", self.DEFAULT_VALVE_VALUE)
+
+        self.edge_search_timer = os.environ.get("THERMOSTAT_EDGE_TIMEOUT", self.DEFAULT_EDGE_TIMEOUT)
 
 
         self.datafile = os.path.join(self.data_path, 'config.settings')

@@ -7,6 +7,8 @@ from .config import Config
 from .data import Data
 
 from .temperaturesim import TemperatureSimulator
+from .edge import EdgeContext
+
 
 from .endpoints.configuration import ConfigurationEndpoint
 from .endpoints.data import DataEndpoint
@@ -15,21 +17,23 @@ from .endpoints.alive import AliveEndpoint
 log = logging.getLogger(__name__)
 
 
-class SimulatorMiddleware:
+class WorkerManager:
 
     def __init__(self, config, simulators:list) -> None:
         self._config = config
         self._sims = simulators
 
     async def process_startup(self, scope, event):
-        log.info("Starting Up Sensor Simulators...")
+        log.info("Starting Up Workers...")
         for sim in self._sims:
+            log.info(f"Starting {sim.thread_name}")
             t = threading.Thread(target = sim.worker, name=sim.thread_name)
             t.start()
 
     async def process_shutdown(self, scope, event):
-        log.info("Shutting down Sensor Simulators...")
+        log.info("Shutting down Workers...")
         for sim in self._sims:
+            log.info(f"Stopping {sim.thread_name}")
             sim.shutdown.set()
 
 def create_app(config=None):
@@ -37,16 +41,18 @@ def create_app(config=None):
     config = config or Config()
     #data = Data(config)
 
+    edgecontext = EdgeContext(config=config)
+
     tempsim = TemperatureSimulator(config)
 
 
 
     app = falcon.asgi.App(
-        middleware = [SimulatorMiddleware(config, [tempsim])]
+        middleware = [WorkerManager(config, [tempsim, edgecontext])]
     )
 
     config_endpoint = ConfigurationEndpoint(config=config)
-    data_endpoint = DataEndpoint(config, tempsim)
+    data_endpoint = DataEndpoint(config, tempsim, edge=edgecontext)
     alive_endpoint = AliveEndpoint()
 
     app.add_route('/configuration', config_endpoint)
