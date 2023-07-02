@@ -19,7 +19,7 @@ class Config:
 
     DEFAULT_EDGE_TIMEOUT = 60
 
-    DEFAULT_SERVER_PORT = 8000
+    DEFAULT_SERVER_PORT = 8001
 
     DEFAULT_VALVE_VALUE = 50
 
@@ -42,23 +42,27 @@ class Config:
     def __init__(self) -> None:
         self.configlock = threading.Lock()
 
-        self.server_port = os.environ.get("THERMOSTAT_SERVER_PORT", self.DEFAULT_SERVER_PORT)
-
-        self.multicast_port = os.environ.get("THERMOSTAT_MULTICAST_PORT", self.DEFAULT_MULTICAST_PORT)
+        
 
         self.logging_level = os.environ.get("THERMOSTAT_LOGGING_LEVEL", self.DEFAULT_LOGGING_LEVEL)
         Config.__setup_logging__(self.logging_level)
 
         log.info(f"logging level: {self.logging_level}")
 
+        self.server_port = int(os.environ.get("THERMOSTAT_SERVER_PORT", self.DEFAULT_SERVER_PORT))
+
+        self.multicast_port = int(os.environ.get("THERMOSTAT_MULTICAST_PORT", self.DEFAULT_MULTICAST_PORT))
+
+        
+
         self.data_path = pathlib.Path(os.environ.get("THERMOSTAT_DATA_LOCATION", self.DEFAULT_DATA_LOCATION))
         self.data_path.mkdir(parents=True, exist_ok=True)
 
         log.info(f"data path: {self.data_path}")
 
-        self.buffer_maxlen = os.environ.get("THERMOSTAT_BUFFER_LENGTH", self.DEFAULT_BUFFER_LENGTH)
+        # self.buffer_maxlen = os.environ.get("THERMOSTAT_BUFFER_LENGTH", self.DEFAULT_BUFFER_LENGTH)
 
-        log.info(f"buffer length: {self.buffer_maxlen}")
+        # log.info(f"buffer length: {self.buffer_maxlen}")
 
         self.temperature_change_interval = os.environ.get("THERMOSTAT_TEMPERATURE_CHANGE_INTERVAL", self.DEFAULT_TEMPCHANGE_INTERVAL)
 

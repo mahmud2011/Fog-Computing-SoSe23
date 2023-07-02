@@ -45,7 +45,9 @@ class EdgeContext(Simulator):
         sock.setsockopt(socket.IPPROTO_IP,
                         socket.IP_MULTICAST_TTL,
                         ttl)
-        sock.sendto(bytes(f"TSENSOR:{self._config.server_port}", encoding="ascii"), (group, port))
+        msg = f"SENSOR:TEMPERATURE:{self._config.server_port}".encode("ascii")
+        log.debug(f"Message to send to multicast: {msg}")
+        sock.sendto(bytes(msg), (group, port))
 
         log.info("Sent Multicast")
 
@@ -67,7 +69,8 @@ class EdgeContext(Simulator):
                 if before != self.edgeavailable:
                     log.info(f"Edge availability changed from {before} to {self.edgeavailable}")
 
-            self.send_multicast()
+            if not self.edgeavailable:
+                self.send_multicast()
 
             sleep(5)
         
