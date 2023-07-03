@@ -19,7 +19,7 @@ def create_app(config:Config=None):
         middleware = [WorkerManager(config, [sensor_manager])]
     )
 
-    uvicorn_config = uvicorn.Config(app=app, port=config.server_port, log_level=config.logging_level.lower())
+    uvicorn_config = uvicorn.Config(app=app, host=None, port=config.server_port, log_level=config.logging_level.lower())
     uvicorn_server = uvicorn.Server(uvicorn_config)
 
     asyncio.run(uvicorn_server.serve())
