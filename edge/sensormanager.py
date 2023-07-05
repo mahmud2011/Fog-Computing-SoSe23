@@ -71,7 +71,9 @@ class SensorManager(Worker):
                                     t = threading.Thread(target = new_sensor.keep_alive_worker, name=f"sensor-worker-{new_sensor._type}-{new_sensor._address}")
                                     self.sensor_threads.append(t)
                                     sensor._own_thread = t
+                                    sensor.offline = False
                                     t.start()
+                                    
 
                     
                         if not already_exists:

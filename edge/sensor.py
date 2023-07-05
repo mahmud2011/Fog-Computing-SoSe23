@@ -27,7 +27,7 @@ class Sensor:
         self.shutdown.clear()
         self._own_thread:threading.Thread = None
 
-        self.exponential_backoff = 1
+        self.exponential_backoff = 0
         self.offline = False
 
 
@@ -47,7 +47,7 @@ class Sensor:
     def is_alive(self):
         log.debug(f"Sending keepalive to {self._address}/alive")
         try:
-            r = requests.get(f"{self._address}/alive", timeout=3)
+            r = requests.get(f"{self._address}/alive", timeout=1)
             self.connected_to_sensor()
             if not self._alive:
                 log.info(f"(Re)Connected to {self._type} at {self._address}")
@@ -57,8 +57,6 @@ class Sensor:
             if self._alive:
                 log.info(f"Failed to connect to {self._type} sensor at {self._address}")
                 self._alive = False
-            if not self._alive:
-                self.exponential_backoff += 1
 
     def keep_alive_worker(self):
         while True:
@@ -66,17 +64,20 @@ class Sensor:
                 log.debug("Shutdown Flag is set. Stopping...")
                 return
             
-            if (datetime.datetime.now() - self.last_connection).total_seconds()  > self._config.sensor_keepalive_interval:
+            if (datetime.datetime.now() - self.last_connection).total_seconds()  > self._config.keepalive_interval:
                 self.is_alive()
+            
+            if not self._alive:
+                self.exponential_backoff += 1
 
             if self._alive:
-                self.shutdown.wait(self._config.sensor_keepalive_worker_interval)
-            elif self.exponential_backoff > self._config.sensor_max_backoffs:
+                self.shutdown.wait(self._config.keepalive_worker_interval)
+            elif self.exponential_backoff > self._config.max_backoffs:
                 log.info(f"Exceeded maximum backoffs {self._type} sensor at {self._address}")
-                self.exponential_backoff = 1
+                self.exponential_backoff = 0
                 self.offline = True
                 return
             else:
-                backoff_time = round((self._config.sensor_keepalive_worker_interval) * sqrt(self.exponential_backoff), 2)
+                backoff_time = round((self._config.keepalive_worker_interval) * sqrt(self.exponential_backoff), 2)
                 log.info(f"Backing off for {backoff_time} seconds for {self._type} sensor at {self._address}")
                 self.shutdown.wait(backoff_time)

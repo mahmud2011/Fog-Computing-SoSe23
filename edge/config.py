@@ -13,17 +13,22 @@ class Config:
     
     DEFAULT_PUSH_INTERVAL = 5
 
-    DEFAULT_SENSOR_KEEPALIVE_INTERVAL = 20
+    DEFAULT_KEEPALIVE_INTERVAL = 20
 
-    DEFAULT_SENSOR_KEEPALIVE_WORKER_INTERVAL = 5
+    DEFAULT_KEEPALIVE_WORKER_INTERVAL = 5
 
-    DEFAULT_SENSOR_MAX_BACKOFFS = 4
+    DEFAULT_MAX_BACKOFFS = 4
 
     DEFAULT_EXPONENTIAL_BACKOFF = True
 
     DEFAULT_SERVER_PORT = 8000
 
     DEFAULT_MULTICAST_PORT = 5924
+
+
+    DEFAULT_CLOUD_IP = "127.0.0.1"
+
+    DEFAULT_CLOUD_PORT = 12323
 
 
     def __setup_logging__(logging_level:str):
@@ -49,9 +54,13 @@ class Config:
 
         self.multicast_port = int(os.environ.get("EDGE_MULTICAST_PORT", self.DEFAULT_MULTICAST_PORT))
 
+        self.cloud_ip = os.environ.get("EDGE_CLOUD_IP", self.DEFAULT_CLOUD_PORT)
 
-        self.sensor_keepalive_interval = int(os.environ.get("EDGE_KEEPALIVE_INTERVAL", self.DEFAULT_SENSOR_KEEPALIVE_INTERVAL))
+        self.cloud_port = os.environ.get("EDGE_CLOUD_PORT", self.DEFAULT_CLOUD_PORT)
 
-        self.sensor_keepalive_worker_interval = int(os.environ.get("EDGE_KEEPALIVE_WORKER_INTERVAL", self.DEFAULT_SENSOR_KEEPALIVE_WORKER_INTERVAL))
 
-        self.sensor_max_backoffs = int(os.environ.get("EDGE_MAX_BACKOFFS", self.DEFAULT_SENSOR_MAX_BACKOFFS))
+        self.keepalive_interval = int(os.environ.get("EDGE_KEEPALIVE_INTERVAL", self.DEFAULT_KEEPALIVE_INTERVAL))
+
+        self.keepalive_worker_interval = int(os.environ.get("EDGE_KEEPALIVE_WORKER_INTERVAL", self.DEFAULT_KEEPALIVE_WORKER_INTERVAL))
+
+        self.max_backoffs = int(os.environ.get("EDGE_MAX_BACKOFFS", self.DEFAULT_MAX_BACKOFFS))
