@@ -1,7 +1,6 @@
 import datetime
 import logging
 import threading
-from time import sleep
 
 from .config import Config
 from .simulators import Simulator
@@ -72,6 +71,6 @@ class EdgeContext(Simulator):
             if not self.edgeavailable:
                 self.send_multicast()
 
-            sleep(5)
+            self.shutdown.wait(5)
         
 

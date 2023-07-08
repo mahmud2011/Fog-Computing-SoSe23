@@ -41,7 +41,6 @@ class WorkerManager:
 def create_app(config=None):
 
     config = config or Config()
-    #data = Data(config)
 
     edgecontext = EdgeContext(config=config)
 

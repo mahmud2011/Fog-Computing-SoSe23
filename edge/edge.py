@@ -22,7 +22,7 @@ def create_app(config:Config=None):
 
 
     app = falcon.asgi.App(
-        middleware = [WorkerManager(config, [sensor_manager, data_manager, cloud_manager._dataqueuemanager])]
+        middleware = [WorkerManager(config, [sensor_manager, data_manager, cloud_manager])]
     )
 
     uvicorn_config = uvicorn.Config(app=app, host=None, port=config.server_port, log_level=config.logging_level.lower())

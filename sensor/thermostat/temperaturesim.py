@@ -1,7 +1,5 @@
-import datetime
 import logging
 import threading
-from time import sleep
 from .config import Config
 from .simulators import Simulator
 
@@ -63,4 +61,4 @@ class TemperatureSimulator(Simulator):
             
             self.setNewTemperature() 
             
-            sleep(self._config.temperature_change_interval)
+            self.shutdown.wait(self._config.temperature_change_interval)

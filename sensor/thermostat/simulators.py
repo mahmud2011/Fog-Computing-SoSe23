@@ -1,7 +1,6 @@
 import threading
 from time import sleep
 from .config import Config
-from .data import Data
 
 import logging
 log = logging.getLogger(__name__)
@@ -24,4 +23,4 @@ class Simulator:
                 log.debug("Shutdown Flag is set. Stopping...")
                 return
             
-            sleep(5)
+            self.shutdown.wait(5)
