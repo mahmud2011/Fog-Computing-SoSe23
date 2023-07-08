@@ -1,5 +1,6 @@
 import logging
 import os
+import pathlib
 import threading
 
 log = logging.getLogger(__name__)
@@ -25,6 +26,11 @@ class Config:
 
     DEFAULT_MULTICAST_PORT = 5924
 
+    DEFAULT_QUERY_INTERVAL = 5
+
+    DEFAULT_DATA_LOCATION = "data"
+
+    DEFAULT_DATA_BUFFER_LENGTH = 20
 
     DEFAULT_CLOUD_IP = "127.0.0.1"
 
@@ -50,6 +56,9 @@ class Config:
         self.logging_level = os.environ.get("EDGE_LOGGING_LEVEL", self.DEFAULT_LOGGING_LEVEL)
         Config.__setup_logging__(self.logging_level)
 
+        self.data_path = pathlib.Path(os.environ.get("EDGE_DATA_LOCATION", self.DEFAULT_DATA_LOCATION))
+        self.data_path.mkdir(parents=True, exist_ok=True)
+
         self.server_port = int(os.environ.get("EDGE_SERVER_PORT", self.DEFAULT_SERVER_PORT))
 
         self.multicast_port = int(os.environ.get("EDGE_MULTICAST_PORT", self.DEFAULT_MULTICAST_PORT))
@@ -64,3 +73,8 @@ class Config:
         self.keepalive_worker_interval = int(os.environ.get("EDGE_KEEPALIVE_WORKER_INTERVAL", self.DEFAULT_KEEPALIVE_WORKER_INTERVAL))
 
         self.max_backoffs = int(os.environ.get("EDGE_MAX_BACKOFFS", self.DEFAULT_MAX_BACKOFFS))
+
+
+        self.sensor_query_interval = int(os.environ.get("EDGE_QUERY_INTERVAL", self.DEFAULT_QUERY_INTERVAL))
+
+        self.buffer_maxlen = int(os.environ.get("EDGE_DATA_BUFFER_LENGTH", self.DEFAULT_DATA_BUFFER_LENGTH))
