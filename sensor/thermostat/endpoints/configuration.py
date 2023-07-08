@@ -25,7 +25,7 @@ class ConfigurationEndpoint:
         self._edge.edge_seen()
         resp.content_type = falcon.MEDIA_JSON
         resp.status = falcon.HTTP_200
-        resp.media = json.dumps(self._config.valve_open_value)
+        resp.media = json.dumps({'valve': self._config.valve_open_value})
 
     async def on_post_valve(self, req:Request, resp:Response):
         self._edge.edge_seen()

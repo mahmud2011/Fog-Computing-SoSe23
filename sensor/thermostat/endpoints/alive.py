@@ -1,6 +1,9 @@
+import sys
 from falcon import Response, Request
 import falcon
 from ..edge import EdgeContext
+from ..config import Config
+
 
 class AliveEndpoint():
 

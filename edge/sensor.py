@@ -1,3 +1,4 @@
+import json
 import logging
 from math import sqrt
 import threading
@@ -37,7 +38,7 @@ class SensorManager(Worker):
 
             self.new_config = threading.Event()
             self.new_config.set()
-            self.target_temp = 21
+            self.target_temp = 25
 
 
 
@@ -59,11 +60,45 @@ class SensorManager(Worker):
 
 
 
-        def get_valve(self) -> str:
-            pass
+        def get_valve(self) -> requests.Response:
+            log.debug(f"Getting valve configuration from {self._address}/configuration/valve")
+            if not self._alive:
+                return None
+            try:
+                r = requests.get(f"{self._address}/configuration/valve", timeout=1)
+                self.connected_to_sensor()
+                return r
+            except:
+                self.is_alive()
+                return None
 
-        def set_valve(self, configuration:str) -> bool:
-            pass
+        def set_valve(self, configuration) -> bool:
+            log.debug(f"Setting valve configuration for {self._address}/configuration/valve")
+            if not self._alive:
+                return None
+            try:
+                headers = {"Content-Type": "application/json"}
+                r = requests.post(f"{self._address}/configuration/valve", json=configuration, headers=headers, timeout=1)
+                self.connected_to_sensor()
+                return r
+            except:
+                self.is_alive()
+                return None
+
+        def update_valve(self):
+            # get temp
+            response: requests.Response = self.request_data()
+            current_temp = json.loads(response.content.decode())['temperature']
+            #check if temp == target
+            if self.target_temp == current_temp:
+                log.debug("Thermostat has already reached target temperature")
+                return
+            log.info(f"Updating valve configuration for {self._type} at {self._address}")
+            #calc valve
+            target_valve = int(((self.target_temp - 15) / 10) * 100)
+            #set valve
+            configuration = {'valve':target_valve}
+            self.set_valve(configuration)
 
         def is_alive(self):
             log.debug(f"Sending keepalive to {self._address}/alive")
@@ -96,9 +131,11 @@ class SensorManager(Worker):
                     #update config
                     if self.new_config.is_set():
                         self.target_temp = self._sensormanager.sensor_config['target_temperature']
+                        
                         self.new_config.clear()
 
-
+                    self.update_valve()
+                    
 
                     self.shutdown.wait(self._config.keepalive_worker_interval)
 

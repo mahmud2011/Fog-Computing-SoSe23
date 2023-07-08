@@ -37,7 +37,7 @@ class TemperatureSimulator(Simulator):
 
     def setNewTemperature(self):
         with self.templock:
-            targettemp = (((self._config.valve_open_value/100) * 9) + 16)
+            targettemp = (((self._config.valve_open_value/100) * 10) + 15)
             diff = targettemp - self.temperature
             log.debug(f"Calculated differenz between {self.temperature} and the target of {targettemp}")
             if diff < 0.15 and diff > -0.15:

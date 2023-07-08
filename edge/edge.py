@@ -1,4 +1,6 @@
 import logging
+from random import randint
+from time import sleep
 from .config import Config
 from .workermanager import WorkerManager
 from .sensor import SensorManager
@@ -29,8 +31,6 @@ def create_app(config:Config=None):
     uvicorn_server = uvicorn.Server(uvicorn_config)
 
     asyncio.run(uvicorn_server.serve())
-
-    exit(0)
 
 if __name__ == "__main__":
     create_app()

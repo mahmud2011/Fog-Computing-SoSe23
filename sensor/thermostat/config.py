@@ -49,6 +49,9 @@ class Config:
 
         log.info(f"logging level: {self.logging_level}")
 
+        self.crash: bool = False
+        self.death: bool = False
+
         self.server_port = int(os.environ.get("THERMOSTAT_SERVER_PORT", self.DEFAULT_SERVER_PORT))
 
         self.multicast_port = int(os.environ.get("THERMOSTAT_MULTICAST_PORT", self.DEFAULT_MULTICAST_PORT))

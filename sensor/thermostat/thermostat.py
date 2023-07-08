@@ -1,22 +1,24 @@
-import datetime
 import logging
+from random import randint
 import threading
+from time import sleep
 import falcon.asgi
 import uvicorn
 import asyncio
 
 from .config import Config
-from .data import Data
 
 from .temperaturesim import TemperatureSimulator
 from .edge import EdgeContext
-
 
 from .endpoints.configuration import ConfigurationEndpoint
 from .endpoints.data import DataEndpoint
 from .endpoints.alive import AliveEndpoint
 
 log = logging.getLogger(__name__)
+
+
+restart_stop = threading.Event()
 
 
 class WorkerManager:
@@ -46,8 +48,6 @@ def create_app(config=None):
 
     tempsim = TemperatureSimulator(config)
 
-
-
     app = falcon.asgi.App(
         middleware = [WorkerManager(config, [tempsim, edgecontext])]
     )
@@ -69,8 +69,5 @@ def create_app(config=None):
 
     asyncio.run(uvicorn_server.serve())
 
-    exit(0)
-
 if __name__ == "__main__":
     create_app()
-    

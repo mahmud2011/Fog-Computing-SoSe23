@@ -176,7 +176,7 @@ class CloudManager(Worker):
 
         self.last_connection = datetime.datetime.fromtimestamp(1)
         self.last_connection_lock = threading.Lock()
-        self.alive = False
+        self._alive = False
         self.exponential_backoff = 1
 
         self._edge_id = None
