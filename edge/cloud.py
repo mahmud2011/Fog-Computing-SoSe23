@@ -185,8 +185,8 @@ class CloudManager(Worker):
         if os.path.exists(self._edge_id_file) and os.path.isfile(self._edge_id_file):
                 file = open(self._edge_id_file, 'r')
                 self._edge_id = file.read()
-                log.info("Loaded id from file")
                 file.close()
+                log.info("Loaded id from file")
 
     def register(self):
         try:
@@ -203,7 +203,7 @@ class CloudManager(Worker):
             self.last_connection = datetime.datetime.now()
 
     def start_workers(self):
-        if self._workers_up:
+        if self._workers_up or self._edge_id == None:
             return
         log.info("Starting cloud workers...")
         self._dataqueuemanager.shutdown.clear()
@@ -230,9 +230,6 @@ class CloudManager(Worker):
             if not self._alive:
                 log.info(f"(Re)Connected to cloud at {self._address}")
                 self._alive = True
-                self.start_workers()
-            if self._edge_id == None:
-                self.register()
 
                 
         except:
@@ -241,7 +238,7 @@ class CloudManager(Worker):
             if self._alive:
                 log.info(f"Failed to connect to cloud at {self._address}")
                 self._alive = False
-                self.shutdown_workers()
+            
                 
 
     def worker(self):
@@ -260,8 +257,15 @@ class CloudManager(Worker):
 
             if self._alive:
                 self.exponential_backoff = 0
+
+                if self._edge_id == None:
+                    self.register()
+                self.start_workers()
+                
                 self.shutdown.wait(self._config.keepalive_worker_interval)
             else:
+                self.shutdown_workers()
+
                 backoff_time = round(
                     (self._config.keepalive_worker_interval) * sqrt(self.exponential_backoff), 2)
                 log.info(

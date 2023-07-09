@@ -21,6 +21,7 @@ def create_app(config:Config=None):
     cloud_manager = CloudManager('cloud-manager', config, sensor_manager)
     data_manager = DataManger("data-manager", config=config, sensormanager=sensor_manager, dataqueue=cloud_manager._dataqueuemanager)
     
+    sensor_manager.sensor_config = {'target_temperature':16}
 
 
     app = falcon.asgi.App(
