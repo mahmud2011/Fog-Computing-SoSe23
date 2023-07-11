@@ -137,8 +137,10 @@ class CloudDataQueue(Worker):
         try:
             headers = {"Content-Type": "application/json"}
             to_send = {'data':data, 'token':self._cloud_manager._edge_id, 'id':None, 'message':""}
-            requests.post(f"{self._addr}/api/edge-data", json=to_send, headers=headers)
+            resp = requests.post(f"{self._addr}/api/edge-data", json=to_send, headers=headers)
             self._cloud_manager.connected_to_cloud()
+            if resp.status_code > 300:
+                return False
             return True
         except:
             self._cloud_manager.is_alive()
