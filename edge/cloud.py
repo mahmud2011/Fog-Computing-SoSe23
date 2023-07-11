@@ -199,7 +199,8 @@ class CloudDataQueue(Worker):
                 data = self.get_data()
                 if self.send_data_to_cloud(data):
                     self.confirm_sent_data()
-                time.sleep(0.5)
+                else:
+                    break
             
             
 
