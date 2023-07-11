@@ -32,9 +32,9 @@ class Config:
 
     DEFAULT_DATA_BUFFER_LENGTH = 20
 
-    DEFAULT_CLOUD_IP = "127.0.0.1"
+    DEFAULT_CLOUD_IP = "192.168.178.111"
 
-    DEFAULT_CLOUD_PORT = 12323
+    DEFAULT_CLOUD_PORT = 8080
 
 
     def __setup_logging__(logging_level:str):
@@ -63,7 +63,7 @@ class Config:
 
         self.multicast_port = int(os.environ.get("EDGE_MULTICAST_PORT", self.DEFAULT_MULTICAST_PORT))
 
-        self.cloud_ip = os.environ.get("EDGE_CLOUD_IP", self.DEFAULT_CLOUD_PORT)
+        self.cloud_ip = os.environ.get("EDGE_CLOUD_IP", self.DEFAULT_CLOUD_IP)
 
         self.cloud_port = os.environ.get("EDGE_CLOUD_PORT", self.DEFAULT_CLOUD_PORT)
 

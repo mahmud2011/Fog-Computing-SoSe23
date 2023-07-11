@@ -8,6 +8,8 @@ import time
 import requests
 from websockets.sync.client import connect
 from websockets.exceptions import ConnectionClosed
+import stomp
+
 
 from edge.config import Config
 
@@ -25,7 +27,7 @@ class CloudConfigurationWebsocket(Worker):
     def __init__(self, thread_name: str, address: str, config: Config, sensormanager: SensorManager, cloudmanager) -> None:
         super().__init__(thread_name, config)
 
-        self._addr = address
+        self._addr = address.replace("http", "ws")
 
         self._sensormanager = sensormanager
         self._cloud_manager:CloudManager = cloudmanager
@@ -33,28 +35,64 @@ class CloudConfigurationWebsocket(Worker):
     def parse_config(data:str):
         return data
 
+    def connect_and_subscribe(conn):
+        conn.connect()
+        conn.subscribe('/app/config', 0)
+
+    class MyListener(stomp.ConnectionListener):
+        def __init__(self, conn):
+            self.conn = conn
+
+        def on_error(self, frame):
+            print('received an error "%s"' % frame.body)
+
+        def on_message(self, frame):
+            print('received a message "%s"' % frame.body)
+            for x in range(10):
+                print(x)
+                time.sleep(1)
+            print('processed message')
+
+        def on_disconnected(self):
+            print('disconnected')
+            time.sleep(5)
+            CloudConfigurationWebsocket.connect_and_subscribe(self.conn)
+
     def worker(self):
-        with connect(self._addr) as websocket:
-            while (True):
-                if self.shutdown.is_set():
-                    log.debug("Shutdown Flag is set. Stopping...")
-                    return
+        log.debug(f"connecting to {self._addr}/topic/topic/config")
+        conn = stomp.Connection([('192.168.178.111', 8080)], heartbeats=(4000, 4000), reconnect_attempts_max=1)
+        conn.set_listener('', stomp.PrintingListener())
+        CloudConfigurationWebsocket.connect_and_subscribe(conn)
+        while True:
+            if self.shutdown.is_set():
+                conn.disconnect()
+                log.debug("Shutdown Flag is set. Stopping...")
+                return
+            
+        # with connect(f"{self._addr}/topic/config") as websocket:
+        #     while (True):
+        #         if self.shutdown.is_set():
+        #             log.debug("Shutdown Flag is set. Stopping...")
+        #             return
                 
-                try:
-                    data = websocket.recv(0)
+        #         try:
+        #             data = websocket.recv(0)
 
-                    self._cloud_manager.connected_to_cloud()
+        #             self._cloud_manager.connected_to_cloud()
 
-                    parsed_data = CloudConfigurationWebsocket.parse_config(data)
+        #             parsed_data = CloudConfigurationWebsocket.parse_config(data)
 
-                    self._sensormanager.sensor_config = parsed_data
+        #             self._sensormanager.sensor_config = parsed_data
+
+        #             log.debug(parsed_data)
 
 
                     
-                except ConnectionClosed:
-                    self._cloud_manager.is_alive()
-                except:
-                    self.shutdown.wait(5)
+        #         except ConnectionClosed:
+        #             self._cloud_manager.is_alive()
+        #         except:
+        #             
+        #             log.debug("Did not get a new websocket message")
 
 
 class CloudDataQueue(Worker):
@@ -95,13 +133,11 @@ class CloudDataQueue(Worker):
                 file.write(json.dumps(self.dataqueue, cls=CloudDataQueue.DequeEncoder))
                 file.close()
 
-            
-
-
     def send_data_to_cloud(self, data):
         try:
-            headers = {"Content-Type": "application/json", 'edge-token': self._cloud_manager._edge_id}
-            requests.post(f"{self._addr}/data", json=data, headers=headers)
+            headers = {"Content-Type": "application/json"}
+            to_send = {'data':data, 'token':self._cloud_manager._edge_id, 'id':None, 'message':""}
+            requests.post(f"{self._addr}/api/edge-data", json=to_send, headers=headers)
             self._cloud_manager.connected_to_cloud()
             return True
         except:
@@ -110,7 +146,10 @@ class CloudDataQueue(Worker):
 
     def get_data_from_cloud(self):
         try:
-            response: requests.Response = requests.get(f"{self._addr}/data")
+            headers = {"Content-Type": "application/json"}
+            to_send = {'data':dict(), 'token':self._cloud_manager._edge_id, 'id':None, 'message':""}
+            response: requests.Response = requests.get(f"{self._addr}/api/edge-data", json=to_send, headers=headers)
+            print(response, response.content)
             return response.content.decode()
         except:
             self._cloud_manager.is_alive()
@@ -143,12 +182,17 @@ class CloudDataQueue(Worker):
 
 
     def worker(self):
+        # content = json.loads(self.get_data_from_cloud())
+
+        # if content['data']['timestamp'] == self.get_data()['timestamp']:
+        #     self.confirm_sent_data()
+
         while True:
             if self.shutdown.is_set():
                 log.debug("Shutdown Flag is set. Stopping...")
                 return
             
-            log.info("Sending data in Buffer...")
+            log.info("Trying to send data in Buffer...")
             log.debug(f"Buffer: {self.dataqueue}")
 
             while len(self.dataqueue) > 0:
@@ -183,17 +227,20 @@ class CloudManager(Worker):
         self._edge_id_file = os.path.join(self._config.data_path, 'id')
 
         if os.path.exists(self._edge_id_file) and os.path.isfile(self._edge_id_file):
-                file = open(self._edge_id_file, 'r')
-                self._edge_id = file.read()
-                file.close()
-                log.info("Loaded id from file")
+            file = open(self._edge_id_file, 'r')
+            self._edge_id = file.read()
+            file.close()
+            log.info("Loaded id from file")
 
     def register(self):
         try:
-            response: requests.Response = requests.get(f"{self._address}/register")
+            response: requests.Response = requests.get(f"{self._address}/api/register")
             self.connected_to_cloud()
-            new_id = response.content.decode()
-            self._edge_id = new_id
+            new_id = json.loads(response.content.decode())
+            self._edge_id = new_id['token']
+            with open(self._edge_id_file, 'x') as file:
+                file.write(str(self._edge_id))
+            log.info(f"Registered with cloud. ID: {self._edge_id}")
         except:
             log.info("Failed to register")
 
@@ -209,9 +256,9 @@ class CloudManager(Worker):
         self._dataqueuemanager.shutdown.clear()
         t = threading.Thread(target = self._dataqueuemanager.worker, name=self._dataqueuemanager.thread_name)
         t.start()
-        self._websocketmanager.shutdown.clear()
-        t = threading.Thread(target = self._websocketmanager.worker, name=self._websocketmanager.thread_name)
-        t.start()
+        # self._websocketmanager.shutdown.clear()
+        # t = threading.Thread(target = self._websocketmanager.worker, name=self._websocketmanager.thread_name)
+        # t.start()
         self._workers_up = True
 
     def shutdown_workers(self):
@@ -223,9 +270,9 @@ class CloudManager(Worker):
         self._workers_up = False
 
     def is_alive(self):
-        log.debug(f"Sending keepalive to {self._address}/alive")
+        log.debug(f"Sending keepalive to {self._address}/api/edge-data")
         try:
-            r = requests.get(f"{self._address}/alive", timeout=1)
+            r = requests.get(f"{self._address}/api/edge-data", timeout=1)
             self.connected_to_cloud()
             if not self._alive:
                 log.info(f"(Re)Connected to cloud at {self._address}")
@@ -234,7 +281,7 @@ class CloudManager(Worker):
                 
         except:
             log.debug(
-                f"Failed to connect when sending a request to {self._address}/alive")
+                f"Failed to connect when sending a request to {self._address}/api/edge-data")
             if self._alive:
                 log.info(f"Failed to connect to cloud at {self._address}")
                 self._alive = False
@@ -261,7 +308,7 @@ class CloudManager(Worker):
                 if self._edge_id == None:
                     self.register()
                 self.start_workers()
-                
+
                 self.shutdown.wait(self._config.keepalive_worker_interval)
             else:
                 self.shutdown_workers()

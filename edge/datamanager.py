@@ -28,6 +28,7 @@ class DataManger(Worker):
             # collect data from all sensors 
             log.debug("Collecting data from sensors")
             data = {'timestamp': time.mktime(datetime.datetime.now().timetuple())}
+            data_sub = dict()
             for sensor in self._sensor_manager.sensors:
                 if not sensor._alive:
                     continue
@@ -35,13 +36,14 @@ class DataManger(Worker):
                 if response == None:
                     continue
                 log.debug(f"Received {response.content} with {response.status_code}")
-                data.update({f"{sensor._type[0]}-{sensor._address}":json.loads(response.content.decode())})
-
+                data_sub.update({f"{sensor._type[0]}-{sensor._address}":json.loads(response.content.decode())})
+            data.update({'data':data_sub})
             log.debug(f"data from {data['timestamp']}:\n{data}")
 
             # send to CloudDataQueue
 
-            if len(data) > 1:
+            if len(data['data']) > 0:
+                log.debug("Adding data to data queue")
                 self._data_queue.add_data(data)
 
 

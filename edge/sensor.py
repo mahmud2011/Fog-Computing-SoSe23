@@ -166,7 +166,7 @@ class SensorManager(Worker):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.setblocking(False)
-        self.sock.settimeout(0.5)
+        self.sock.settimeout(0.2)
         self.sock.bind(('', MCAST_PORT))
         self.mreq = struct.pack("4sl", socket.inet_aton(MCAST_GRP), socket.INADDR_ANY)
         self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, self.mreq)
@@ -186,8 +186,7 @@ class SensorManager(Worker):
 
         if os.path.exists(self._sensor_config_file) and os.path.isfile(self._sensor_config_file):
                 file = open(self._sensor_config_file, 'r')
-                self._sensor_config = file.read()
-                log.info("Loaded id from file")
+                self._sensor_config = json.loads(file.read())
                 file.close()
                 log.info("Loaded sensor config from file")
 
